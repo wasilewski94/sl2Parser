@@ -8,6 +8,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Date;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import java.util.Random;
+import java.awt.Color;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -19,8 +24,9 @@ public class ConvertToCSV {
 	private static final float FEET_TO_METERS = 0.3048f;
 //	private static final float KNOTS = 1.852f;
 
-	private static final String FILENAME = "data.csv";
+//	private static final String FILENAME = "data.csv";
 	private static final int DATA_BLOCK_SIZE = 1920;
+	private static final int HEIGHT=4096*32;
 
 	
 	public static void main(String[] args) throws IOException {
@@ -29,9 +35,11 @@ public class ConvertToCSV {
 		byte[] x = new byte[DATA_BLOCK_SIZE];
 		// header is 8 bytes;
 		dataInputStream.read(x, 0, 8);
-	    		
+		BufferedImage finalImage;
+		finalImage = new BufferedImage(DATA_BLOCK_SIZE, HEIGHT, BufferedImage.TYPE_INT_RGB);//TYPE_INT_ARGB
+				
 		int blockcounter = 0;
-		while(blockcounter < 3) {
+		while(blockcounter < HEIGHT) {
 //			short y = toBigEndianShort(dataInputStream.readShort()); // 142
 			int a2 = toBigEndianShortAsInt(dataInputStream.readUnsignedShort()); // 0
 			int a11 = toBigEndianShortAsInt(dataInputStream.readUnsignedShort()); // 2
@@ -163,18 +171,18 @@ public class ConvertToCSV {
 //			short y = toBigEndianShort(dataInputStream.readShort()); // 142
 //			int x2 = toBigEndianInt(dataInputStream.readInt()); // 140
 
-			blockcounter++;
+			
 			Date date = new Date(((long)timeX) * 1000L);
-
+			
 			// print data		
 			//String content = latitude + "," + longitude + "," + depth3 + "," + waterTemp + "," + date.toString() + "," + k + System.lineSeparator();	
 			
 			//System.out.println(content);
-			System.out.println(Arrays.toString(x));
+//			System.out.println(Arrays.toString(imageData));
 			
 			//write to file data.txt
-			try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILENAME,true))) {
-				for(int i=0; i<x.length; i++)
+			/*try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILENAME,true))) {
+				for(int i=0; i<DATA_BLOCK_SIZE; i++)
 				{
 					bw.write(Arrays.toString(x));
 					bw.write(",");
@@ -184,10 +192,31 @@ public class ConvertToCSV {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			*/
+			
+
+			Random rand = new Random();
+			
+			int[] y = new int[DATA_BLOCK_SIZE]; 
+			for(int i=0; i<DATA_BLOCK_SIZE; i++)
+			{
+				y[i]=i*255/1920;
+			}
+			int imageData[] = new int[DATA_BLOCK_SIZE];
+			for(int i=0; i<DATA_BLOCK_SIZE; i++)
+			{
+				imageData[i]=(x[i]);
+//				System.out.print(imageData[i]);
+//				System.out.print(",");
+			}
+//			System.out.println("");
+			finalImage.setRGB(0, blockcounter, DATA_BLOCK_SIZE, 1, imageData, 0 ,DATA_BLOCK_SIZE);			
+			blockcounter++; 
 			
 			System.out.println(blockcounter + "," + frameIndex + ",");
-			// header is 10 bytes;
+			// header is 10 byte
 		}
+		ImageIO.write(finalImage, "bmp", new File("abc.bmp"));
 
 	}
 	public static int toBigEndianShortAsInt(int littleendian) {
